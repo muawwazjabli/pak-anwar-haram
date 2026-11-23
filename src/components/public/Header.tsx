@@ -117,7 +117,7 @@ export default function Header() {
             </a>
 
             <Link
-              href="/admin"
+              href="/ops-portal/login"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-brand-300 bg-brand-50 hover:bg-brand-100 text-brand-900 text-xs font-semibold shadow-sm transition"
             >
               <Shield className="w-3.5 h-3.5 text-brand-700" />

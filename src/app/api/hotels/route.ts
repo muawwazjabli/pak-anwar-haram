@@ -50,6 +50,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
+      existingHotelId,
       name,
       city,
       locationArea,
@@ -61,29 +62,34 @@ export async function POST(request: Request) {
       userId
     } = body;
 
-    if (!name || !city) {
-      return NextResponse.json({ error: 'Hotel name and city are required' }, { status: 400 });
+    let targetHotelId = existingHotelId || body.hotelId;
+    let targetHotel = targetHotelId ? db.hotels.find(h => h.id === targetHotelId) : null;
+
+    if (!targetHotel) {
+      if (!name || !city) {
+        return NextResponse.json({ error: 'Hotel name and city are required' }, { status: 400 });
+      }
+
+      targetHotelId = `hotel-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+      targetHotel = {
+        id: targetHotelId,
+        supplierId: supplierId || 'sup-meezab',
+        name,
+        aliases: [],
+        city: city as 'Makkah' | 'Madinah',
+        locationArea: locationArea || '',
+        distanceRaw: distanceRaw || '',
+        distanceMeters: null,
+        shuttleService: Boolean(shuttleService),
+        starRating: starRating ? parseInt(starRating) : null,
+        status: 'published' as const,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      db.hotels.push(targetHotel);
     }
-
-    const hotelId = `hotel-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-    const newHotel = {
-      id: hotelId,
-      supplierId: supplierId || 'sup-meezab',
-      name,
-      aliases: [],
-      city: city as 'Makkah' | 'Madinah',
-      locationArea: locationArea || '',
-      distanceRaw: distanceRaw || '',
-      distanceMeters: null,
-      shuttleService: Boolean(shuttleService),
-      starRating: starRating ? parseInt(starRating) : null,
-      status: 'published' as const,
-      version: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    db.hotels.push(newHotel);
 
     // If date bands supplied
     if (dateBands && Array.isArray(dateBands)) {
@@ -91,9 +97,9 @@ export async function POST(request: Request) {
         const bandId = `band-${Date.now()}-${Math.floor(Math.random()*1000)}`;
         db.hotelDateBands.push({
           id: bandId,
-          hotelId,
-          supplierId: newHotel.supplierId,
-          bandLabelRaw: b.label || 'Custom Band',
+          hotelId: targetHotelId,
+          supplierId: targetHotel.supplierId,
+          bandLabelRaw: b.label || `${b.startDate || ''} to ${b.endDate || ''}`,
           startDate: b.startDate,
           endDate: b.endDate,
           currency: 'SAR',
@@ -108,7 +114,7 @@ export async function POST(request: Request) {
             db.hotelRates.push({
               id: `rate-${Date.now()}-${Math.floor(Math.random()*10000)}`,
               dateBandId: bandId,
-              hotelId,
+              hotelId: targetHotelId,
               occupancy: r.occupancy,
               billingBasis: r.billingBasis,
               rateAmount: r.rateAmount != null ? parseFloat(r.rateAmount) : null,
@@ -127,16 +133,16 @@ export async function POST(request: Request) {
     db.auditLogs.push({
       id: `audit-${Date.now()}`,
       userId: userId || 'admin',
-      action: 'MANUAL_CREATE_HOTEL',
+      action: 'MANUAL_CREATE_HOTEL_OR_BAND',
       entityType: 'hotels',
-      entityId: hotelId,
-      afterSnapshot: newHotel,
+      entityId: targetHotelId,
+      afterSnapshot: targetHotel,
       createdAt: new Date().toISOString()
     });
 
     return NextResponse.json({
       success: true,
-      hotel: newHotel
+      hotel: targetHotel
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

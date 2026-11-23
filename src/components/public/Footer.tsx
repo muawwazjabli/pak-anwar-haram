@@ -43,7 +43,7 @@ export default function Footer() {
               <li><Link href="/calculator" className="hover:text-white transition">{t.navCalculator}</Link></li>
               <li><Link href="/packages" className="hover:text-white transition">{t.navPackages}</Link></li>
               <li><Link href="/contact" className="hover:text-white transition">{t.navContact}</Link></li>
-              <li><Link href="/admin" className="hover:text-brand-300 transition text-brand-400">{t.navAdmin}</Link></li>
+              <li><Link href="/ops-portal/login" className="hover:text-brand-300 transition text-brand-400">{t.navAdmin}</Link></li>
             </ul>
           </div>
 
